@@ -31,8 +31,6 @@ env/
 .ipynb_checkpoints
 
 # Datasets and model weights
-data/
-datasets/
 /models/
 *.pt
 *.pth

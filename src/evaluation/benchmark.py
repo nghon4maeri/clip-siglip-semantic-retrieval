@@ -63,8 +63,11 @@ if __name__ == "__main__":
     IMAGE_DIR = "datasets/coco/images"
     
     if not os.path.exists(DATASET_JSON):
-        print(f"Không tìm thấy file: {DATASET_JSON}")
-        print("Vui lòng chạy file `datasets/download_annotations.py` trước!")
+        print(f"Không tìm thấy file: {DATASET_JSON}. Đang sử dụng bản sample...")
+        DATASET_JSON = "datasets/coco/annotations/dataset_coco_sample.json"
+        
+    if not os.path.exists(DATASET_JSON):
+        print(f"Không tìm thấy file sample: {DATASET_JSON}")
         exit(1)
         
     dataset = ImageTextRetrievalDataset(json_path=DATASET_JSON, image_dir=IMAGE_DIR, split="test")
