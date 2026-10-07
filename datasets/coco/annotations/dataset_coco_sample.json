@@ -1,0 +1,44 @@
+{
+    "dataset": "coco",
+    "images": [
+        {
+            "filepath": "val2014",
+            "filename": "COCO_val2014_000000391895.jpg",
+            "imgid": 0,
+            "split": "test",
+            "sentences": [
+                {"tokens": ["a", "man", "with", "a", "red", "helmet", "on", "a", "small", "moped", "on", "a", "dirt", "road"], "raw": "A man with a red helmet on a small moped on a dirt road.", "imgid": 0, "sentid": 770337},
+                {"tokens": ["man", "riding", "a", "motor", "bike", "on", "a", "dirt", "road", "on", "the", "countryside"], "raw": "Man riding a motor bike on a dirt road on the countryside.", "imgid": 0, "sentid": 771687},
+                {"tokens": ["a", "man", "riding", "on", "the", "back", "of", "a", "motorcycle"], "raw": "A man riding on the back of a motorcycle.", "imgid": 0, "sentid": 772707},
+                {"tokens": ["a", "dirt", "path", "with", "a", "young", "person", "on", "a", "motor", "bike", "rests", "to", "the", "foreground", "of", "a", "verdant", "area", "with", "a", "bridge", "and", "a", "background", "of", "cloud", "wreathed", "mountains"], "raw": "A dirt path with a young person on a motor bike rests to the foreground of a verdant area with a bridge and a background of cloud-wreathed mountains. ", "imgid": 0, "sentid": 776154},
+                {"tokens": ["a", "man", "in", "a", "red", "shirt", "and", "a", "red", "hat", "is", "on", "a", "motorcycle", "on", "a", "hill", "side"], "raw": "A man in a red shirt and a red hat is on a motorcycle on a hill side.", "imgid": 0, "sentid": 781998}
+            ]
+        },
+        {
+            "filepath": "val2014",
+            "filename": "COCO_val2014_000000522418.jpg",
+            "imgid": 1,
+            "split": "test",
+            "sentences": [
+                {"tokens": ["a", "woman", "wearing", "a", "net", "on", "her", "head", "cutting", "a", "cake"], "raw": "A woman wearing a net on her head cutting a cake. ", "imgid": 1, "sentid": 771597},
+                {"tokens": ["a", "woman", "cutting", "a", "large", "white", "sheet", "cake"], "raw": "A woman cutting a large white sheet cake.", "imgid": 1, "sentid": 772872},
+                {"tokens": ["a", "woman", "wearing", "a", "hair", "net", "cutting", "a", "large", "sheet", "cake"], "raw": "A woman wearing a hair net cutting a large sheet cake.", "imgid": 1, "sentid": 774183},
+                {"tokens": ["there", "is", "a", "woman", "that", "is", "cutting", "a", "white", "cake"], "raw": "there is a woman that is cutting a white cake", "imgid": 1, "sentid": 776979},
+                {"tokens": ["a", "woman", "cutting", "a", "large", "white", "cake", "next", "to", "trees"], "raw": "A woman cutting a large white cake next to trees. ", "imgid": 1, "sentid": 779031}
+            ]
+        },
+        {
+            "filepath": "val2014",
+            "filename": "COCO_val2014_000000184613.jpg",
+            "imgid": 2,
+            "split": "test",
+            "sentences": [
+                {"tokens": ["a", "child", "holding", "a", "flowered", "umbrella", "and", "petting", "a", "yak"], "raw": "A child holding a flowered umbrella and petting a yak.", "imgid": 2, "sentid": 770982},
+                {"tokens": ["a", "young", "man", "holding", "an", "umbrella", "next", "to", "a", "herd", "of", "cattle"], "raw": "A young man holding an umbrella next to a herd of cattle.", "imgid": 2, "sentid": 771216},
+                {"tokens": ["a", "young", "boy", "barefoot", "holding", "an", "umbrella", "touching", "the", "horn", "of", "a", "cow"], "raw": "a young boy barefoot holding an umbrella touching the horn of a cow", "imgid": 2, "sentid": 776739},
+                {"tokens": ["a", "young", "boy", "with", "an", "umbrella", "who", "is", "touching", "the", "horn", "of", "a", "cow"], "raw": "A young boy with an umbrella who is touching the horn of a cow.", "imgid": 2, "sentid": 777324},
+                {"tokens": ["a", "boy", "holding", "an", "umbrella", "while", "standing", "next", "to", "livestock"], "raw": "A boy holding an umbrella while standing next to livestock.", "imgid": 2, "sentid": 782160}
+            ]
+        }
+    ]
+}
