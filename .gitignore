@@ -33,7 +33,7 @@ env/
 # Datasets and model weights
 data/
 datasets/
-models/
+/models/
 *.pt
 *.pth
 *.h5
