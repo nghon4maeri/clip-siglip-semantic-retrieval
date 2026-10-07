@@ -1,0 +1,6 @@
+torch>=2.0.0
+torchvision
+Pillow
+transformers>=4.36.0
+# Cài đặt CLIP từ official repo của OpenAI
+git+https://github.com/openai/CLIP.git
