@@ -25,6 +25,7 @@ The project is strictly organized to reflect a systematic research workflow, sep
 clip-siglip-semantic-retrieval/
 ├── problem/                # Formal problem definition, unknowns, and generic retrieval framework
 ├── related-work/           # Literature review, SOTA comparisons, and gap analysis
+├── pipeline/               # Training/Testing pipelines and Evaluation Metrics definitions
 ├── clip/                   # Theoretical research notes and official repo clone for CLIP
 ├── siglip/                 # Theoretical research notes and official repo clone for SigLIP
 ├── datasets/               # MS COCO datasets, Karpathy splits, and download scripts
