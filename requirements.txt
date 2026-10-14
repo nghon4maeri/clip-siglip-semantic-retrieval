@@ -1,6 +1,6 @@
+# Project dùng bản port HuggingFace (không dùng official OpenAI code cho inference).
+# Trên Kaggle, torch/transformers đã có sẵn — không cần cài lại.
 torch>=2.0.0
-torchvision
-Pillow
 transformers>=4.36.0
-# Cài đặt CLIP từ official repo của OpenAI
-git+https://github.com/openai/CLIP.git
+Pillow
+tqdm
