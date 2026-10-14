@@ -34,7 +34,7 @@ def run_demo():
     print("\n" + "="*50)
     print("1. TESTING WITH CLIP MODEL (OpenAI)")
     print("="*50)
-    clip_model = CLIPWrapper("openai/clip-vit-base-patch32")
+    clip_model = CLIPWrapper("openai/clip-vit-base-patch16-224")
     
     clip_img_embeds = clip_model.get_image_embeddings([image])
     clip_txt_embeds = clip_model.get_text_embeddings(texts)
