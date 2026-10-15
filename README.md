@@ -44,7 +44,7 @@ clip-siglip-semantic-retrieval/
 
 ## Evaluated Models
 
-1.  **CLIP (OpenAI, 2021):** Utilizes a standard InfoNCE (Contrastive) Loss requiring computation of global pairwise similarities across batches. Checkpoint: `openai/clip-vit-base-patch16-224`.
+1.  **CLIP (OpenAI, 2021):** Utilizes a standard InfoNCE (Contrastive) Loss requiring computation of global pairwise similarities across batches. Checkpoint: `openai/clip-vit-base-patch16`.
 2.  **SigLIP (Google DeepMind, 2023):** Introduces a pairwise Sigmoid Loss that operates solely on image-text pairs, removing the need for global batch normalization and allowing for significant scaling. Checkpoint: `google/siglip-base-patch16-224`.
 
 Both checkpoints use ViT-B/16 and 224×224 inputs, so the accuracy/complexity comparison is fair in terms of patch size and resolution.

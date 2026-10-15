@@ -96,7 +96,7 @@ Cài đặt: `src/evaluation/metrics.py` (có test tổng hợp tại `tests/tes
 ### 4.3. Checkpoint chốt so sánh
 | Model | Checkpoint | Ghi chú |
 |---|---|---|
-| CLIP | `openai/clip-vit-base-patch16-224` | ViT-B/16, 224×224 |
+| CLIP | `openai/clip-vit-base-patch16` | ViT-B/16, 224×224 (196 patch) |
 | SigLIP | `google/siglip-base-patch16-224` | ViT-B/16, 224×224 |
 
 Hai checkpoint cùng patch size 16 và cùng độ phân giải 224, nên phần so sánh độ phức tạp

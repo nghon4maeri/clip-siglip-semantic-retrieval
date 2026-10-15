@@ -44,7 +44,7 @@ from src.models.siglip_wrapper import SigLIPWrapper  # noqa: E402
 
 WRAPPERS = {"clip": CLIPWrapper, "siglip": SigLIPWrapper}
 DEFAULT_CHECKPOINTS = {
-    "clip": "openai/clip-vit-base-patch16-224",
+    "clip": "openai/clip-vit-base-patch16",
     "siglip": "google/siglip-base-patch16-224",
 }
 PROTOCOL_DESCRIPTION = (

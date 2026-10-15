@@ -14,7 +14,7 @@ class CLIPWrapper:
     transformers v4 nhưng trả ``BaseModelOutputWithPooling`` ở v5 — xem
     ``src/models/features.py``.
     """
-    def __init__(self, model_name="openai/clip-vit-base-patch16-224", device=None):
+    def __init__(self, model_name="openai/clip-vit-base-patch16", device=None):
         self.device = torch.device(device) if device is not None else torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
