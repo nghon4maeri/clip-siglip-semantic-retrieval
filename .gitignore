@@ -38,6 +38,22 @@ env/
 *.ckpt
 *.safetensors
 
+# Datasets — file tải về, không commit vào git
+datasets/coco/annotations/dataset_coco.json
+datasets/coco/annotations/dataset_coco.json.sha256
+caption_datasets.zip
+datasets/coco/images/*
+!datasets/coco/images/val2014
+datasets/coco/images/val2014/*
+!datasets/coco/images/val2014/COCO_val2014_000000391895.jpg
+!datasets/coco/images/val2014/COCO_val2014_000000060623.jpg
+!datasets/coco/images/val2014/COCO_val2014_000000483108.jpg
+!datasets/coco/images/val2014/COCO_val2014_000000384213.jpg
+!datasets/coco/images/val2014/COCO_val2014_000000386164.jpg
+
+# Kết quả benchmark
+results/
+
 # OS files
 .DS_Store
 Thumbs.db

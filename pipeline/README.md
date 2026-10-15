@@ -35,7 +35,7 @@ Mục tiêu của giai đoạn huấn luyện là học cách "căn chỉnh" (al
 
 ## 2. Giai đoạn Kiểm thử (Testing / Inference Pipeline)
 
-Mục tiêu của giai đoạn này là thực hiện chức năng **Text-to-Image Retrieval** trên một tập cơ sở dữ liệu cho trước (ví dụ: tập Validation của MS COCO).
+Mục tiêu của giai đoạn này là thực hiện chức năng **Text-to-Image Retrieval** trên một tập cơ sở dữ liệu cho trước (tập **test** theo Karpathy split của MS COCO).
 
 ### 2.1. Tiền xử lý Cơ sở dữ liệu (Offline Feature Extraction)
 Để tăng tốc độ truy xuất, đặc trưng của hình ảnh được tính toán sẵn:
@@ -69,3 +69,45 @@ Một mô hình tốt không chỉ chính xác mà còn phải nhanh và nhẹ. 
 1. **Số lượng tham số (Parameter Count):** Kích thước mô hình (vd: ViT-B/16 ~ 150M tham số).
 2. **Kích thước Batch Size cực đại (Max Batch Size):** Do giới hạn bộ nhớ VRAM, SigLIP cho phép Batch Size lớn hơn nhiều so với CLIP trên cùng một phần cứng.
 3. **Độ trễ Truy xuất (Retrieval Latency):** Thời gian tính toán Cosine Similarity cho 1 query đối với $N$ ảnh. Nhờ sử dụng Dot Product cơ bản, tốc độ này là cực kỳ nhanh ($O(N)$) và có thể tối ưu hóa bằng các thư viện tìm kiếm vector (như FAISS).
+
+---
+
+## 4. Protocol Đánh giá Thực nghiệm (đã chốt cho benchmark)
+
+Phần này là **quy định bắt buộc** cho mọi lần chạy benchmark, để kết quả của các thành viên
+và của hai model so sánh được với nhau cũng như với các công bố khoa học.
+
+### 4.1. Dữ liệu
+* **Annotations:** `dataset_coco.json` (Karpathy split), tải bằng `datasets/download_annotations.py`.
+  Cả nhóm phải dùng **cùng một SHA256** (script in ra và cảnh báo nếu lệch bản chuẩn).
+* **Tập test:** 5.000 ảnh (Karpathy test). Ảnh lấy từ COCO 2014 `val2014`.
+* **Captions:** protocol chuẩn lấy **5 captions đầu của mỗi ảnh** ⇒ 25.000 text query.
+  (File gốc Karpathy có 10 ảnh chứa 6 captions — 10 caption thừa bị bỏ qua.)
+
+### 4.2. Ma trận tương đồng và cách tính Recall@K
+* Mỗi ảnh và mỗi caption được mã hóa thành vector và **L2-normalize**; điểm tương đồng là tích vô hướng (cosine similarity).
+* Ma trận tương đồng kích thước **`[5000 ảnh, 25000 captions]`**.
+* **Image-to-Text (i2t):** mỗi hàng (ảnh) xếp hạng toàn bộ captions; query đúng nếu **có ít nhất một** caption của ảnh đó nằm trong top-K.
+* **Text-to-Image (t2i):** mỗi cột (caption) xếp hạng toàn bộ ảnh; query đúng nếu **ảnh gốc** của caption nằm trong top-K.
+* **Recall@K** = trung bình phần trăm trên **toàn bộ query** (i2t: 5000 query; t2i: 25000 query), với K = 1, 5, 10.
+
+Cài đặt: `src/evaluation/metrics.py` (có test tổng hợp tại `tests/test_metrics.py`).
+
+### 4.3. Checkpoint chốt so sánh
+| Model | Checkpoint | Ghi chú |
+|---|---|---|
+| CLIP | `openai/clip-vit-base-patch16` | ViT-B/16, 224×224 (196 patch) |
+| SigLIP | `google/siglip-base-patch16-224` | ViT-B/16, 224×224 |
+
+Hai checkpoint cùng patch size 16 và cùng độ phân giải 224, nên phần so sánh độ phức tạp
+tính toán (số token ảnh, tham số, thời gian) là công bằng về cấu hình đầu vào.
+
+### 4.4. Chỉ số phụ trợ (Computational Complexity)
+Mỗi lần chạy tự động log: thời gian trích xuất ảnh/text, thời gian similarity, peak VRAM,
+số tham số, device, git commit, SHA256 annotations, phiên bản torch/transformers.
+Tất cả nằm trong `results/benchmark.json`.
+
+### 4.5. Điều kiện để số liệu được dùng trong báo cáo
+* Chạy **đủ 5000 ảnh** (không dùng `--limit`), `scripts/verify_data.py` báo `[OK] 5000/5000`.
+* Dùng đúng checkpoint ở mục 4.3 và đúng protocol ở mục 4.1–4.2.
+* Ghi kèm `git_commit` và `annotation_sha256` từ file kết quả để truy vết.
