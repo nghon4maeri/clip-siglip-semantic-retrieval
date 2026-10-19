@@ -50,11 +50,23 @@ Nếu bạn bắt buộc phải chạy ở máy local, thư mục `images/` đã
 ```text
 datasets/
 ├── README.md
-└── coco/
+├── coco/                                      # Benchmark 1: MS COCO (In-Domain)
+│   ├── annotations/
+│   │   └── dataset_coco.json
+│   └── images/
+│       └── val2014/
+└── newsseek/                                  # Benchmark 2: NewsSeek (Out-of-Domain)
+    ├── README.md                              # Hướng dẫn chi tiết cho NewsSeek
     ├── annotations/
-    │   └── dataset_coco.json
+    │   └── dataset_newsseek_sample.json       # File mẫu annotations
     └── images/
-        ├── val2014/
-        │   ├── COCO_val2014_000000000042.jpg
-        │   └── ...
+        └── keyframes/                         # Ảnh khung hình trích xuất từ video
 ```
+
+---
+
+## 4. Bộ Dữ Liệu NewsSeek (Event-Centric News Video Benchmark)
+* **Kaggle Link:** [namnguynnnn/newsseek-core-v1](https://www.kaggle.com/datasets/namnguynnnn/newsseek-core-v1)
+* **Mục đích:** Đóng vai trò là tập thử nghiệm ngoài miền (Out-of-Domain Zero-Shot Benchmark) để đo lường độ bền vững trước sự dịch chuyển phân phối dữ liệu (Domain Shift) của CLIP và SigLIP trên tin tức thời sự đời thực.
+* **Tài liệu chi tiết:** Xem tại [`datasets/newsseek/README.md`](file:///D:/User/nghonamjiwoo/My%20Project/clip-siglip-semantic-retrieval/datasets/newsseek/README.md).
+

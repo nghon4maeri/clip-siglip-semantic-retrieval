@@ -1,0 +1,68 @@
+{
+  "dataset": "NewsSeek",
+  "description": "Sample annotations from NewsSeek Event-Centric News Video Dataset (namnguynnnn/newsseek-core-v1)",
+  "language": "en",
+  "total_samples": 5,
+  "samples": [
+    {
+      "id": "gqZ2ArUOv3E",
+      "video_id": "gqZ2ArUOv3E",
+      "title": "Nightline Full Broadcast — Monday, August 10, 2026",
+      "caption": "Nightline Full Broadcast — Monday, August 10, 2026",
+      "filename": "gqZ2ArUOv3E.jpg",
+      "image_path": "keyframes/gqZ2ArUOv3E.jpg",
+      "source_name": "ABC News",
+      "source_region": "US",
+      "duration_seconds": 1129.0,
+      "categories": "News & Politics"
+    },
+    {
+      "id": "G14g1DS2GSI",
+      "video_id": "G14g1DS2GSI",
+      "title": "Luigi Mangione arrives in state court ahead of September trial",
+      "caption": "Luigi Mangione arrives in state court ahead of September trial",
+      "filename": "G14g1DS2GSI.jpg",
+      "image_path": "keyframes/G14g1DS2GSI.jpg",
+      "source_name": "ABC News",
+      "source_region": "US",
+      "duration_seconds": 182.0,
+      "categories": "News & Politics"
+    },
+    {
+      "id": "ASrkeo2-fz4",
+      "video_id": "ASrkeo2-fz4",
+      "title": "Mangione in court as trial nears",
+      "caption": "Mangione in court as trial nears",
+      "filename": "ASrkeo2-fz4.jpg",
+      "image_path": "keyframes/ASrkeo2-fz4.jpg",
+      "source_name": "ABC News",
+      "source_region": "US",
+      "duration_seconds": 125.0,
+      "categories": "News & Politics"
+    },
+    {
+      "id": "1Tv2tS60avM",
+      "video_id": "1Tv2tS60avM",
+      "title": "Trump signs executive order changing childhood vaccine schedule",
+      "caption": "Trump signs executive order changing childhood vaccine schedule",
+      "filename": "1Tv2tS60avM.jpg",
+      "image_path": "keyframes/1Tv2tS60avM.jpg",
+      "source_name": "ABC News",
+      "source_region": "US",
+      "duration_seconds": 210.0,
+      "categories": "News & Politics"
+    },
+    {
+      "id": "L5Ld4XpPj5w",
+      "video_id": "L5Ld4XpPj5w",
+      "title": "Russia can't wage war without North Korea, Zelenskyy says",
+      "caption": "Russia can't wage war without North Korea, Zelenskyy says",
+      "filename": "L5Ld4XpPj5w.jpg",
+      "image_path": "keyframes/L5Ld4XpPj5w.jpg",
+      "source_name": "ABC News",
+      "source_region": "US",
+      "duration_seconds": 195.0,
+      "categories": "News & Politics"
+    }
+  ]
+}

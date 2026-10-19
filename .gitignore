@@ -26,9 +26,24 @@ venv/
 .venv/
 env/
 .env
+.env.*
+*.env
 
-# Jupyter Notebook
+# API Keys, Tokens & Credentials (NEVER COMMIT)
+*kaggle*.json
+!notebooks/kernel-metadata.json
+*.key
+*.token
+*.secret
+credentials*.json
+client_secret*.json
+*.pem
+*.id_rsa
+.credentials/
+
+# Jupyter Notebook & Colab
 .ipynb_checkpoints
+.colab/
 
 # Datasets and model weights
 /models/
@@ -49,3 +64,17 @@ scratch/
 # Logs
 logs/
 *.log
+
+# Large Dataset media files & raw archives
+datasets/*/images/
+datasets/*/videos/
+datasets/*/keyframes/
+datasets/*/processed/
+datasets/*/*.zip
+datasets/*/*.tar*
+datasets/coco/annotations/dataset_coco.json
+datasets/newsseek/newsseek_manifest.json
+*.mp4
+*.avi
+*.mkv
+*.webm
