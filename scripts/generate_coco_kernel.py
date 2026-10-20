@@ -1,0 +1,375 @@
+"""Script to generate the Kaggle notebook and metadata for COCO Karpathy Test 5K encoding."""
+
+import json
+from pathlib import Path
+import nbformat as nbf
+
+def create_coco_kernel():
+    nb = nbf.v4.new_notebook()
+    
+    cells = []
+    
+    # Cell 1: Markdown title
+    cells.append(nbf.v4.new_markdown_cell(
+        "# COCO Karpathy Test 5K: CLIP vs SigLIP Feature Encoding & Benchmark\n\n"
+        "This notebook performs:\n"
+        "1. GPU-accelerated batch feature extraction for 5,000 test images and 25,000 captions using `openai/clip-vit-base-patch32` and `google/siglip-base-patch16-224`.\n"
+        "2. Exact FAISS `IndexFlatIP` vector store construction with rich metadata.\n"
+        "3. Quantitative cross-modal evaluation (Recall@1, 5, 10, MRR, Modality Gap, Separation Margin).\n"
+        "4. Artifact export for downstream semantic search."
+    ))
+    
+    # Cell 2: Imports & Environment
+    cells.append(nbf.v4.new_code_cell(
+        "!pip install -q faiss-cpu transformers\n\n"
+        "import os\n"
+        "import sys\n"
+        "import time\n"
+        "import json\n"
+        "import zipfile\n"
+        "from pathlib import Path\n\n"
+        "import torch\n"
+        "import numpy as np\n"
+        "from PIL import Image\n"
+        "from tqdm.auto import tqdm\n"
+        "import faiss\n"
+        "from transformers import AutoProcessor, AutoModel, CLIPProcessor, CLIPModel\n\n"
+        "device = 'cuda' if torch.cuda.is_available() else 'cpu'\n"
+        "print(f'Using device: {device}')\n"
+        "if torch.cuda.is_available():\n"
+        "    print(f'Device Name: {torch.cuda.get_device_name(0)}')\n"
+        "    print(f'VRAM Allocated: {torch.cuda.memory_allocated(0)/(1024**2):.1f} MB')\n"
+    ))
+    
+    # Cell 3: Dataset Discovery
+    cells.append(nbf.v4.new_code_cell(
+        "# Locate coco_test_5k.json and images\n"
+        "search_roots = [Path('/kaggle/input'), Path('../datasets'), Path('./datasets'), Path('./')]\n"
+        "anno_path = None\n"
+        "for r in search_roots:\n"
+        "    matches = list(r.glob('**/coco_test_5k.json'))\n"
+        "    if matches:\n"
+        "        anno_path = matches[0]\n"
+        "        break\n\n"
+        "if not anno_path:\n"
+        "    raise FileNotFoundError('coco_test_5k.json not found in search paths!')\n\n"
+        "print(f'Annotation JSON located at: {anno_path}')\n"
+        "with open(anno_path, 'r', encoding='utf-8') as f:\n"
+        "    coco_data = json.load(f)\n\n"
+        "images_meta = coco_data['images']\n"
+        "print(f'Total images in split: {len(images_meta)}')\n\n"
+        "# Find val2014 image directory\n"
+        "img_dir = anno_path.parent.parent / 'val2014'\n"
+        "if not img_dir.exists():\n"
+        "    # Search for first image\n"
+        "    first_name = images_meta[0]['filename']\n"
+        "    for r in search_roots:\n"
+        "        found = list(r.glob(f'**/{first_name}'))\n"
+        "        if found:\n"
+        "            img_dir = found[0].parent\n"
+        "            break\n\n"
+        "print(f'Images directory located at: {img_dir}')\n"
+        "sample_exists = (img_dir / images_meta[0]['filename']).exists()\n"
+        "print(f'Sample image {images_meta[0][\"filename\"]} exists: {sample_exists}')\n"
+    ))
+    
+    # Cell 4: Prepare Data structures
+    cells.append(nbf.v4.new_code_cell(
+        "def extract_tensor_features(output):\n"
+        "    if isinstance(output, torch.Tensor):\n"
+        "        return output\n"
+        "    if hasattr(output, 'pooler_output') and output.pooler_output is not None:\n"
+        "        return output.pooler_output\n"
+        "    if hasattr(output, 'last_hidden_state') and output.last_hidden_state is not None:\n"
+        "        return output.last_hidden_state[:, 0, :]\n"
+        "    if hasattr(output, '__getitem__'):\n"
+        "        return output[0]\n"
+        "    return output\n\n"
+        "# Build linear list of images and captions\n"
+        "image_records = []\n"
+        "caption_records = []\n\n"
+        "for idx, img in enumerate(images_meta):\n"
+        "    filename = img['filename']\n"
+        "    full_path = img_dir / filename\n"
+        "    cocoid = img['cocoid']\n"
+        "    raw_captions = [s['raw'].strip() for s in img.get('sentences', [])]\n"
+        "    \n"
+        "    image_records.append({\n"
+        "        'idx': idx,\n"
+        "        'cocoid': cocoid,\n"
+        "        'filename': filename,\n"
+        "        'path': str(full_path),\n"
+        "        'captions': raw_captions,\n"
+        "    })\n"
+        "    \n"
+        "    for cap_idx, cap_text in enumerate(raw_captions):\n"
+        "        caption_records.append({\n"
+        "            'caption_idx': len(caption_records),\n"
+        "            'image_idx': idx,\n"
+        "            'cocoid': cocoid,\n"
+        "            'caption': cap_text,\n"
+        "        })\n\n"
+        "print(f'Indexed {len(image_records)} images and {len(caption_records)} captions.')\n"
+    ))
+    
+    # Cell 5: CLIP ViT-B/32 Extraction
+    cells.append(nbf.v4.new_code_cell(
+        "# Load CLIP ViT-B/32\n"
+        "print('--> Loading openai/clip-vit-base-patch32...')\n"
+        "clip_model_id = 'openai/clip-vit-base-patch32'\n"
+        "clip_processor = CLIPProcessor.from_pretrained(clip_model_id)\n"
+        "clip_model = CLIPModel.from_pretrained(clip_model_id).to(device).eval()\n\n"
+        "# 1. Encode Images\n"
+        "batch_size = 128\n"
+        "clip_img_embeds = []\n"
+        "t0 = time.time()\n"
+        "with torch.no_grad():\n"
+        "    for i in tqdm(range(0, len(image_records), batch_size), desc='CLIP Images'):\n"
+        "        batch = image_records[i : i + batch_size]\n"
+        "        pil_imgs = [Image.open(b['path']).convert('RGB') for b in batch]\n"
+        "        inputs = clip_processor(images=pil_imgs, return_tensors='pt').to(device)\n"
+        "        with torch.autocast(device_type='cuda', dtype=torch.float16):\n"
+        "            feats = extract_tensor_features(clip_model.get_image_features(**inputs))\n"
+        "            feats = feats / feats.norm(dim=-1, keepdim=True)\n"
+        "        clip_img_embeds.append(feats.cpu().float())\n\n"
+        "clip_img_tensor = torch.cat(clip_img_embeds, dim=0)\n"
+        "clip_img_time = time.time() - t0\n"
+        "print(f'CLIP Image Encoding: {len(clip_img_tensor)} images in {clip_img_time:.2f}s ({len(clip_img_tensor)/clip_img_time:.1f} img/s)')\n\n"
+        "# 2. Encode Captions\n"
+        "clip_txt_embeds = []\n"
+        "t0 = time.time()\n"
+        "with torch.no_grad():\n"
+        "    for i in tqdm(range(0, len(caption_records), 256), desc='CLIP Texts'):\n"
+        "        batch = caption_records[i : i + 256]\n"
+        "        texts = [b['caption'] for b in batch]\n"
+        "        inputs = clip_processor(text=texts, padding=True, truncation=True, return_tensors='pt').to(device)\n"
+        "        with torch.autocast(device_type='cuda', dtype=torch.float16):\n"
+        "            feats = extract_tensor_features(clip_model.get_text_features(**inputs))\n"
+        "            feats = feats / feats.norm(dim=-1, keepdim=True)\n"
+        "        clip_txt_embeds.append(feats.cpu().float())\n\n"
+        "clip_txt_tensor = torch.cat(clip_txt_embeds, dim=0)\n"
+        "clip_txt_time = time.time() - t0\n"
+        "print(f'CLIP Text Encoding: {len(clip_txt_tensor)} captions in {clip_txt_time:.2f}s ({len(clip_txt_tensor)/clip_txt_time:.1f} txt/s)')\n\n"
+        "del clip_model, clip_processor\n"
+        "torch.cuda.empty_cache()\n"
+    ))
+    
+    # Cell 6: SigLIP ViT-B/16-224 Extraction
+    cells.append(nbf.v4.new_code_cell(
+        "# Load SigLIP ViT-B/16-224\n"
+        "print('--> Loading google/siglip-base-patch16-224...')\n"
+        "siglip_model_id = 'google/siglip-base-patch16-224'\n"
+        "siglip_processor = AutoProcessor.from_pretrained(siglip_model_id)\n"
+        "siglip_model = AutoModel.from_pretrained(siglip_model_id).to(device).eval()\n\n"
+        "# 1. Encode Images\n"
+        "siglip_img_embeds = []\n"
+        "t0 = time.time()\n"
+        "with torch.no_grad():\n"
+        "    for i in tqdm(range(0, len(image_records), batch_size), desc='SigLIP Images'):\n"
+        "        batch = image_records[i : i + batch_size]\n"
+        "        pil_imgs = [Image.open(b['path']).convert('RGB') for b in batch]\n"
+        "        inputs = siglip_processor(images=pil_imgs, return_tensors='pt').to(device)\n"
+        "        with torch.autocast(device_type='cuda', dtype=torch.float16):\n"
+        "            feats = extract_tensor_features(siglip_model.get_image_features(**inputs))\n"
+        "            feats = feats / feats.norm(dim=-1, keepdim=True)\n"
+        "        siglip_img_embeds.append(feats.cpu().float())\n\n"
+        "siglip_img_tensor = torch.cat(siglip_img_embeds, dim=0)\n"
+        "siglip_img_time = time.time() - t0\n"
+        "print(f'SigLIP Image Encoding: {len(siglip_img_tensor)} images in {siglip_img_time:.2f}s ({len(siglip_img_tensor)/siglip_img_time:.1f} img/s)')\n\n"
+        "# 2. Encode Captions\n"
+        "siglip_txt_embeds = []\n"
+        "t0 = time.time()\n"
+        "with torch.no_grad():\n"
+        "    for i in tqdm(range(0, len(caption_records), 256), desc='SigLIP Texts'):\n"
+        "        batch = caption_records[i : i + 256]\n"
+        "        texts = [b['caption'] for b in batch]\n"
+        "        inputs = siglip_processor(text=texts, padding='max_length', truncation=True, return_tensors='pt').to(device)\n"
+        "        with torch.autocast(device_type='cuda', dtype=torch.float16):\n"
+        "            feats = extract_tensor_features(siglip_model.get_text_features(**inputs))\n"
+        "            feats = feats / feats.norm(dim=-1, keepdim=True)\n"
+        "        siglip_txt_embeds.append(feats.cpu().float())\n\n"
+        "siglip_txt_tensor = torch.cat(siglip_txt_embeds, dim=0)\n"
+        "siglip_txt_time = time.time() - t0\n"
+        "print(f'SigLIP Text Encoding: {len(siglip_txt_tensor)} captions in {siglip_txt_time:.2f}s ({len(siglip_txt_tensor)/siglip_txt_time:.1f} txt/s)')\n\n"
+        "del siglip_model, siglip_processor\n"
+        "torch.cuda.empty_cache()\n"
+    ))
+    
+    # Cell 7: Quantitative Benchmark Evaluation
+    cells.append(nbf.v4.new_code_cell(
+        "def evaluate_coco(img_tensor, txt_tensor, image_records, caption_records, k_vals=[1, 5, 10]):\n"
+        "    print('Computing similarity matrix (25000 x 5000)...')\n"
+        "    # txt_tensor: (25000, D), img_tensor: (5000, D)\n"
+        "    sim_matrix = torch.matmul(txt_tensor, img_tensor.T) # shape: (25000, 5000)\n"
+        "    \n"
+        "    targets = torch.tensor([c['image_idx'] for c in caption_records], dtype=torch.long)\n"
+        "    N_queries = len(caption_records)\n"
+        "    \n"
+        "    # Text-to-Image (T2I)\n"
+        "    top_max = max(k_vals)\n"
+        "    _, topk_preds = sim_matrix.topk(top_max, dim=1, largest=True)\n"
+        "    target_expanded = targets.unsqueeze(1).expand_as(topk_preds)\n"
+        "    matches = (topk_preds == target_expanded)\n"
+        "    \n"
+        "    res = {}\n"
+        "    for k in k_vals:\n"
+        "        res[f'T2I_R@{k}'] = round(float((matches[:, :k].any(dim=1).float().mean().item()) * 100.0), 2)\n"
+        "    \n"
+        "    # MRR calculation\n"
+        "    _, full_sorted = sim_matrix.sort(dim=1, descending=True)\n"
+        "    ranks = (full_sorted == targets.unsqueeze(1)).nonzero(as_tuple=True)[1] + 1\n"
+        "    res['T2I_MRR'] = round(float((1.0 / ranks.float()).mean().item()), 4)\n"
+        "    res['T2I_mR'] = round(float(np.mean([res[f'T2I_R@{k}'] for k in k_vals])), 2)\n"
+        "    \n"
+        "    # Modality Gap: L2 distance between mean image embedding and mean text embedding\n"
+        "    mean_img = img_tensor.mean(dim=0)\n"
+        "    mean_txt = txt_tensor.mean(dim=0)\n"
+        "    gap = torch.norm(mean_img - mean_txt, p=2).item()\n"
+        "    res['modality_gap'] = round(float(gap), 4)\n"
+        "    \n"
+        "    # Separation Margin (mean positive score - mean top distractors)\n"
+        "    pos_scores = sim_matrix[torch.arange(N_queries), targets]\n"
+        "    res['mean_pos_score'] = round(float(pos_scores.mean().item()), 4)\n"
+        "    \n"
+        "    return res\n\n"
+        "print('\\n=== EVALUATING CLIP (ViT-B/32) ON COCO 5K ===')\n"
+        "clip_benchmark = evaluate_coco(clip_img_tensor, clip_txt_tensor, image_records, caption_records)\n"
+        "clip_benchmark['img_enc_time_sec'] = round(clip_img_time, 2)\n"
+        "clip_benchmark['txt_enc_time_sec'] = round(clip_txt_time, 2)\n"
+        "print(json.dumps(clip_benchmark, indent=2))\n\n"
+        "print('\\n=== EVALUATING SIGLIP (ViT-B/16-224) ON COCO 5K ===')\n"
+        "siglip_benchmark = evaluate_coco(siglip_img_tensor, siglip_txt_tensor, image_records, caption_records)\n"
+        "siglip_benchmark['img_enc_time_sec'] = round(siglip_img_time, 2)\n"
+        "siglip_benchmark['txt_enc_time_sec'] = round(siglip_txt_time, 2)\n"
+        "print(json.dumps(siglip_benchmark, indent=2))\n"
+    ))
+    
+    # Cell 8: Build and Save FAISS Indexes + Metadata + Zips
+    cells.append(nbf.v4.new_code_cell(
+        "# Prepare storage directories\n"
+        "out_dir = Path('/kaggle/working')\n"
+        "storage_dir = out_dir / 'storage' / 'coco'\n"
+        "clip_store_dir = storage_dir / 'clip'\n"
+        "siglip_store_dir = storage_dir / 'siglip'\n"
+        "clip_store_dir.mkdir(parents=True, exist_ok=True)\n"
+        "siglip_store_dir.mkdir(parents=True, exist_ok=True)\n\n"
+        "# 1. Save raw numpy embeddings\n"
+        "np.save(out_dir / 'coco_clip_image_embeddings.npy', clip_img_tensor.numpy())\n"
+        "np.save(out_dir / 'coco_clip_text_embeddings.npy', clip_txt_tensor.numpy())\n"
+        "np.save(out_dir / 'coco_siglip_image_embeddings.npy', siglip_img_tensor.numpy())\n"
+        "np.save(out_dir / 'coco_siglip_text_embeddings.npy', siglip_txt_tensor.numpy())\n"
+        "print('Saved .npy embedding arrays.')\n\n"
+        "# 2. Build metadata list\n"
+        "metadata_list = []\n"
+        "for img in image_records:\n"
+        "    metadata_list.append({\n"
+        "        'id': f'coco_{img[\"idx\"]}',\n"
+        "        'idx': img['idx'],\n"
+        "        'cocoid': img['cocoid'],\n"
+        "        'filename': img['filename'],\n"
+        "        'relative_path': f'val2014/{img[\"filename\"]}',\n"
+        "        'captions': img['captions'],\n"
+        "    })\n\n"
+        "# 3. Build & Save CLIP FAISS Store\n"
+        "clip_index = faiss.IndexFlatIP(512)\n"
+        "clip_vecs = np.ascontiguousarray(clip_img_tensor.numpy(), dtype=np.float32)\n"
+        "faiss.normalize_L2(clip_vecs)\n"
+        "clip_index.add(clip_vecs)\n"
+        "faiss.write_index(clip_index, str(clip_store_dir / 'index.faiss'))\n\n"
+        "clip_meta_payload = {\n"
+        "    'dim': 512,\n"
+        "    'index_type': 'FlatIP',\n"
+        "    'model_name': 'clip',\n"
+        "    'count': len(metadata_list),\n"
+        "    'items': metadata_list,\n"
+        "}\n"
+        "with open(clip_store_dir / 'metadata.json', 'w', encoding='utf-8') as f:\n"
+        "    json.dump(clip_meta_payload, f, ensure_ascii=False, indent=2)\n"
+        "print(f'Saved CLIP VectorStore ({clip_index.ntotal} vectors) -> {clip_store_dir}')\n\n"
+        "# 4. Build & Save SigLIP FAISS Store\n"
+        "siglip_index = faiss.IndexFlatIP(768)\n"
+        "siglip_vecs = np.ascontiguousarray(siglip_img_tensor.numpy(), dtype=np.float32)\n"
+        "faiss.normalize_L2(siglip_vecs)\n"
+        "siglip_index.add(siglip_vecs)\n"
+        "faiss.write_index(siglip_index, str(siglip_store_dir / 'index.faiss'))\n\n"
+        "siglip_meta_payload = {\n"
+        "    'dim': 768,\n"
+        "    'index_type': 'FlatIP',\n"
+        "    'model_name': 'siglip',\n"
+        "    'count': len(metadata_list),\n"
+        "    'items': metadata_list,\n"
+        "}\n"
+        "with open(siglip_store_dir / 'metadata.json', 'w', encoding='utf-8') as f:\n"
+        "    json.dump(siglip_meta_payload, f, ensure_ascii=False, indent=2)\n"
+        "print(f'Saved SigLIP VectorStore ({siglip_index.ntotal} vectors) -> {siglip_store_dir}')\n\n"
+        "# 5. Save benchmark summary\n"
+        "full_benchmark = {\n"
+        "    'dataset': 'coco-karpathy-test5k',\n"
+        "    'total_images': len(image_records),\n"
+        "    'total_captions': len(caption_records),\n"
+        "    'clip_vit_b32': clip_benchmark,\n"
+        "    'siglip_vit_b16_224': siglip_benchmark,\n"
+        "}\n"
+        "with open(out_dir / 'coco_benchmark_results.json', 'w', encoding='utf-8') as f:\n"
+        "    json.dump(full_benchmark, f, indent=2)\n\n"
+        "# 6. Package compact ZIP for local download\n"
+        "zip_path = out_dir / 'coco_vector_stores.zip'\n"
+        "with zipfile.ZipFile(zip_path, 'w', compression=zipfile.ZIP_DEFLATED) as zf:\n"
+        "    zf.write(clip_store_dir / 'index.faiss', 'storage/coco/clip/index.faiss')\n"
+        "    zf.write(clip_store_dir / 'metadata.json', 'storage/coco/clip/metadata.json')\n"
+        "    zf.write(siglip_store_dir / 'index.faiss', 'storage/coco/siglip/index.faiss')\n"
+        "    zf.write(siglip_store_dir / 'metadata.json', 'storage/coco/siglip/metadata.json')\n"
+        "    zf.write(out_dir / 'coco_benchmark_results.json', 'coco_benchmark_results.json')\n\n"
+        "print(f'Created compact download archive ({zip_path.stat().st_size / (1024**2):.2f} MB) -> {zip_path}')\n"
+        "print('=== COCO INGESTION & BENCHMARK COMPLETE ===')\n"
+    ))
+    
+    nb['cells'] = cells
+    nb.metadata = {
+        "kernelspec": {
+            "display_name": "Python 3",
+            "language": "python",
+            "name": "python3"
+        },
+        "language_info": {
+            "codemirror_mode": {"name": "ipython", "version": 3},
+            "file_extension": ".py",
+            "mimetype": "text/x-python",
+            "name": "python",
+            "nbconvert_exporter": "python",
+            "pygments_lexer": "ipython3",
+            "version": "3.10.12"
+        }
+    }
+    
+    out_file = Path('kaggle/encode_coco/encode_coco_clip_siglip.ipynb')
+    with open(out_file, 'w', encoding='utf-8') as f:
+        nbf.write(nb, f)
+    print(f'Created notebook: {out_file}')
+    
+    # Metadata file
+    metadata = {
+        "id": "namnguynnnn/encode-coco-karpathy-test-5k-clip-siglip",
+        "title": "encode-coco-karpathy-test-5k-clip-siglip",
+        "code_file": "encode_coco_clip_siglip.ipynb",
+        "language": "python",
+        "kernel_type": "notebook",
+        "is_private": "true",
+        "enable_gpu": "true",
+        "enable_tpu": "false",
+        "enable_internet": "true",
+        "dataset_sources": [
+            "namnguynnnn/coco-karpathy-test5k"
+        ],
+        "competition_sources": [],
+        "kernel_sources": [],
+        "model_sources": []
+    }
+    
+    meta_path = Path('kaggle/encode_coco/kernel-metadata.json')
+    with open(meta_path, 'w', encoding='utf-8') as f:
+        json.dump(metadata, f, indent=2)
+    print(f'Created metadata: {meta_path}')
+
+if __name__ == '__main__':
+    create_coco_kernel()
