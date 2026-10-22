@@ -1,0 +1,27 @@
+{
+  "dataset": "newsseek",
+  "total_videos": 698,
+  "total_keyframes": 164874,
+  "clip_vit_b32": {
+    "R@1": 1.86,
+    "R@5": 6.88,
+    "R@10": 10.32,
+    "MRR": 0.0498,
+    "mR": 6.35,
+    "modality_gap": 0.8664,
+    "R@1_EN": 1.86,
+    "kf_enc_time_sec": 3845.73,
+    "throughput_fps": 42.9
+  },
+  "siglip_vit_b16_224": {
+    "R@1": 2.29,
+    "R@5": 7.74,
+    "R@10": 11.03,
+    "MRR": 0.0548,
+    "mR": 7.02,
+    "modality_gap": 1.0835,
+    "R@1_EN": 2.29,
+    "kf_enc_time_sec": 3845.73,
+    "throughput_fps": 42.9
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "dataset": "coco-karpathy-test5k",
+  "total_images": 5000,
+  "total_captions": 25010,
+  "clip_vit_b32": {
+    "T2I_R@1": 30.51,
+    "T2I_R@5": 55.96,
+    "T2I_R@10": 66.82,
+    "T2I_MRR": 0.4262,
+    "T2I_mR": 51.1,
+    "modality_gap": 0.8269,
+    "mean_pos_score": 0.3046,
+    "img_enc_time_sec": 888.07,
+    "txt_enc_time_sec": 7.2
+  },
+  "siglip_vit_b16_224": {
+    "T2I_R@1": 47.81,
+    "T2I_R@5": 72.45,
+    "T2I_R@10": 80.98,
+    "T2I_MRR": 0.5908,
+    "T2I_mR": 67.08,
+    "modality_gap": 1.0524,
+    "mean_pos_score": 0.115,
+    "img_enc_time_sec": 50.46,
+    "txt_enc_time_sec": 24.26
+  }
+}

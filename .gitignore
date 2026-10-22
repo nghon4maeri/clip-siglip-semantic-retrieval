@@ -66,6 +66,9 @@ node_modules/
 frontend/node_modules/
 frontend/dist/
 
+# Reference repositories / external clones
+ref_repo/
+
 # Logs
 logs/
 *.log
@@ -79,7 +82,15 @@ datasets/*/*.zip
 datasets/*/*.tar*
 datasets/coco/annotations/dataset_coco.json
 datasets/newsseek/newsseek_manifest.json
+datasets/newsseek/newsseek_manifest.json.gz
 *.mp4
 *.avi
 *.mkv
 *.webm
+
+# Large vector stores and binary index artifacts
+storage/
+*.faiss
+*.bin
+*.zip
+
